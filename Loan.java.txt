@@ -1,0 +1,61 @@
+//Loan.java
+
+package LoanSystem;
+
+import com.owlike.genson.annotation.JsonProperty;
+import org.hyperledger.fabric.contract.annotation.DataType;
+import org.hyperledger.fabric.contract.annotation.Property;
+import java.util.Objects;
+
+@DataType()
+public final class Loan {
+
+    @Property()
+    private final String loanId;
+
+    @Property()
+    private final String borrowerName;
+
+    @Property()
+    private final double amount;
+
+    @Property()
+    private final double interestRate;
+
+    public Loan(@JsonProperty("loanId") final String loanId,
+                @JsonProperty("borrowerName") final String borrowerName,
+                @JsonProperty("amount") final double amount,
+                @JsonProperty("interestRate") final double interestRate) {
+        this.loanId = loanId;
+        this.borrowerName = borrowerName;
+        this.amount = amount;
+        this.interestRate = interestRate;
+    }
+
+    public String getLoanId() { return loanId; }
+    public String getBorrowerName() { return borrowerName; }
+    public double getAmount() { return amount; }
+    public double getInterestRate() { return interestRate; }
+
+    @Override
+    public boolean equals(final Object obj) {
+        if (this == obj) return true;
+        if ((obj == null) || (getClass() != obj.getClass())) return false;
+        Loan other = (Loan) obj;
+        return Objects.equals(loanId, other.loanId) &&
+               Objects.equals(borrowerName, other.borrowerName) &&
+               Double.compare(amount, other.amount) == 0 &&
+               Double.compare(interestRate, other.interestRate) == 0;
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(loanId, borrowerName, amount, interestRate);
+    }
+
+    @Override
+    public String toString() {
+        return String.format("Loan[loanId=%s, borrowerName=%s, amount=%.2f, interestRate=%.2f]",
+                loanId, borrowerName, amount, interestRate);
+    }
+}

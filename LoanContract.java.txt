@@ -1,0 +1,80 @@
+//LoanContract.java
+
+package LoanSystem;
+
+import com.owlike.genson.Genson;
+import org.hyperledger.fabric.contract.Context;
+import org.hyperledger.fabric.contract.ContractInterface;
+import org.hyperledger.fabric.contract.annotation.*;
+import org.hyperledger.fabric.shim.ChaincodeException;
+import org.hyperledger.fabric.shim.ChaincodeStub;
+
+@Contract(name = "LoanSystem", info = @Info(title = "Loan Smart Contract",
+        description = "Smart contract for managing Loans",
+        version = "0.0.1"))
+@Default
+public class LoanContract implements ContractInterface {
+
+    private final Genson genson = new Genson();
+
+    private enum LoanErrors {
+        LOAN_NOT_FOUND,
+        LOAN_ALREADY_EXISTS
+    }
+
+    @Transaction()
+    public void initLedger(Context ctx) {
+        ChaincodeStub stub = ctx.getStub();
+        Loan loan = new Loan("L001", "John Doe", 5000.00, 5.0);
+        stub.putStringState("L001", genson.serialize(loan));
+    }
+
+    @Transaction()
+    public Loan registerLoan(Context ctx, String loanId, String borrowerName, double amount, double interestRate) {
+        ChaincodeStub stub = ctx.getStub();
+        if (!stub.getStringState(loanId).isEmpty()) {
+            throw new ChaincodeException("Loan " + loanId + " already exists", LoanErrors.LOAN_ALREADY_EXISTS.toString());
+        }
+        Loan loan = new Loan(loanId, borrowerName, amount, interestRate);
+        stub.putStringState(loanId, genson.serialize(loan));
+        return loan;
+    }
+
+    @Transaction()
+    public Loan readLoan(Context ctx, String loanId) {
+        ChaincodeStub stub = ctx.getStub();
+        String loanJSON = stub.getStringState(loanId);
+        if (loanJSON == null || loanJSON.isEmpty()) {
+            throw new ChaincodeException("Loan " + loanId + " not found", LoanErrors.LOAN_NOT_FOUND.toString());
+        }
+        return genson.deserialize(loanJSON, Loan.class);
+    }
+
+    @Transaction()
+    public Loan updateLoanAmount(Context ctx, String loanId, double newAmount) {
+        ChaincodeStub stub = ctx.getStub();
+        String loanJSON = stub.getStringState(loanId);
+        if (loanJSON.isEmpty()) {
+            throw new ChaincodeException("Loan " + loanId + " not found", LoanErrors.LOAN_NOT_FOUND.toString());
+        }
+
+        Loan existing = genson.deserialize(loanJSON, Loan.class);
+        Loan updated = new Loan(existing.getLoanId(), existing.getBorrowerName(), newAmount, existing.getInterestRate());
+        stub.putStringState(loanId, genson.serialize(updated));
+        return updated;
+    }
+
+    @Transaction()
+    public Loan updateInterestRate(Context ctx, String loanId, double newInterestRate) {
+        ChaincodeStub stub = ctx.getStub();
+        String loanJSON = stub.getStringState(loanId);
+        if (loanJSON.isEmpty()) {
+            throw new ChaincodeException("Loan " + loanId + " not found", LoanErrors.LOAN_NOT_FOUND.toString());
+        }
+
+        Loan existing = genson.deserialize(loanJSON, Loan.class);
+        Loan updated = new Loan(existing.getLoanId(), existing.getBorrowerName(), existing.getAmount(), newInterestRate);
+        stub.putStringState(loanId, genson.serialize(updated));
+        return updated;
+    }
+}

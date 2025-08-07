@@ -1,0 +1,67 @@
+// LMS_ClientApp.java
+
+package loansystem;
+
+import java.nio.file.Path;
+import java.nio.file.Paths;
+
+import org.hyperledger.fabric.gateway.Contract;
+import org.hyperledger.fabric.gateway.Gateway;
+import org.hyperledger.fabric.gateway.Network;
+import org.hyperledger.fabric.gateway.Wallet;
+import org.hyperledger.fabric.gateway.Wallets;
+
+public class ClientApp {
+
+    public static void main(String[] args) throws Exception {
+        // Set the system property for service discovery
+        System.setProperty("org.hyperledger.fabric.sdk.service_discovery.as_localhost", "true");
+
+        // Load the wallet from filesystem
+        Path walletPath = Paths.get("wallet");
+        Wallet wallet = Wallets.newFileSystemWallet(walletPath);
+
+        // Load the network connection configuration
+        Path networkConfigPath = Paths.get("..", "..", "fabric-samples", "test-network", "organizations", "peerOrganizations", "org1.example.com", "connection-org1.yaml");
+
+        // Connect to the gateway
+        Gateway.Builder builder = Gateway.createBuilder();
+        builder.identity(wallet, "appUser").networkConfig(networkConfigPath).discovery(true);
+
+        try (Gateway gateway = builder.connect()) {
+            // Access the channel and contract
+            Network network = gateway.getNetwork("mychannel");
+            Contract contract = network.getContract("LoanSystem");
+
+            // Step 1: Initialize the ledger
+            System.out.println("\n--- Initializing Ledger ---");
+            contract.submitTransaction("initLedger");
+            System.out.println("Ledger initialized successfully.");
+
+            // Step 2: Register a new loan
+            System.out.println("\n--- Registering New Loan (L003) ---");
+            contract.submitTransaction("registerLoan", "L003", "Anu", "10000", "7.5");
+            System.out.println("Loan L003 registered successfully.");
+
+            // Step 3: Read the loan details
+            System.out.println("\n--- Reading Loan Details (L003) ---");
+            byte[] result = contract.evaluateTransaction("readLoan", "L003");
+            System.out.println("Loan Details: " + new String(result));
+
+            // Step 4: Update the loan amount
+            System.out.println("\n--- Updating Loan Amount (L003) ---");
+            contract.submitTransaction("updateLoanAmount", "L003", "12000");
+            System.out.println("Loan L003 amount updated successfully.");
+
+            // Step 5: Update the interest rate
+            System.out.println("\n--- Updating Interest Rate (L003) ---");
+            contract.submitTransaction("updateInterestRate", "L003", "6.5");
+            System.out.println("Loan L003 interest rate updated successfully.");
+
+            // Step 6: Read the updated loan details
+            System.out.println("\n--- Reading Updated Loan Details (L003) ---");
+            result = contract.evaluateTransaction("readLoan", "L003");
+            System.out.println("Updated Loan Details: " + new String(result));
+        }
+    }
+}
