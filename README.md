@@ -110,6 +110,5 @@ This blockchain-based Loan Management System:
 
 ---
 
-## 📁 Repository Structure (Optional)
 
 
